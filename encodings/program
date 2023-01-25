@@ -1,0 +1,128 @@
+% cell(X,Y,N)     --> coordinate x, coordinate y, valore
+% coordinate x    --> 0 100 200 300
+% coordinate y    --> 0 150 300 450
+% mosse possibili --> 1=sopra 2=sotto 3=destra 4=sinistra
+
+% matrice desempio da riempire per fare le prove
+%cell(0,0,1). cell(100,0,3). cell(200,0,0). cell(300,0,3).
+%cell(0,150,0). cell(100,150,0). cell(200,150,3). cell(300,150,1).
+%cell(0,300,0). cell(100,300,1). cell(200,300,2). cell(300,300,2).
+%cell(0,450,0). cell(100,450,0). cell(200,450,2). cell(300,450,0).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% decommentare per vedere quanti merge si fanno per ogni direzione
+% #show mergeNumber/1.
+
+#show movement/1.
+
+% possibilità di muoversi verso SOPRA
+canMove(1) :- cell(X,Y,N), cell(X,Y1,0), Y1<Y, N!=0.
+canMove(1) :- cell(X,Y,N), cell(X,Y1,N), N!=0, N>=3, Y1=Y-150.
+canMove(1) :- cell(X,Y,1), cell(X,Y1,2), Y1=Y-150.
+canMove(1) :- cell(X,Y,2), cell(X,Y1,1), Y1=Y-150.
+
+% possibilità di muoversi verso SOTTO
+canMove(2) :- cell(X,Y,N), cell(X,Y1,0), Y1>Y, N!=0.
+canMove(2) :- cell(X,Y,N), cell(X,Y1,N), N!=0, N>=3, Y1=Y+150.
+canMove(2) :- cell(X,Y,1), cell(X,Y1,2), Y1=Y+150.
+canMove(2) :- cell(X,Y,2), cell(X,Y1,1), Y1=Y+150.
+
+% possibilità di muoversi verso DESTRA
+canMove(3) :- cell(X,Y,N), cell(X1,Y,0), X1>X, N!=0.
+canMove(3) :- cell(X,Y,N), cell(X1,Y,N), N!=0, N>=3, X1=X+100.
+canMove(3) :- cell(X,Y,1), cell(X1,Y,2), X1=X+100.
+canMove(3) :- cell(X,Y,2), cell(X1,Y,1), X1=X+100.
+
+% possibilità di muoversi verso SINISTRA
+canMove(4) :- cell(X,Y,N), cell(X1,Y,0), X1<X, N!=0.
+canMove(4) :- cell(X,Y,N), cell(X1,Y,N), N!=0, N>=3, X1=X-100.
+canMove(4) :- cell(X,Y,1), cell(X1,Y,2), X1=X-100.
+canMove(4) :- cell(X,Y,2), cell(X1,Y,1), X1=X-100.
+
+% possibilità di unire due celle
+canMerge(1,2). canMerge(2,1).
+canMerge(N,N) :- cell(_,_,N), N>=3.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+movement(M) | noMovement(M) :- canMove(M).
+
+% non è possibile avere più di una mossa in un singolo answer set
+:- movement(M1), movement(M2), M1!=M2.
+
+% non è possibile non fare nessuna mossa
+:- noMovement(1), noMovement(2), noMovement(3), noMovement(4).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% unione di celle adiacenti verso SOPRA che si trovano sul bordo
+merge(X,0,X,150,1) :- movement(1), cell(X,0,N1), cell(X,150,N2), canMerge(N1,N2).
+
+% unione di celle adiacenti verso SOPRA che si trovano sul bordo opposto
+merge(X,Y1,X,Y2,1) :- movement(1), cell(X,Y1,N1), cell(X,Y2,N2), Y2=Y1-150, canMerge(N1,N2),
+                      cell(X,Y3,N3), Y3=Y2-150, N3!=0, not canMerge(N2,N3),
+                      cell(X,Y4,N4), N4!=0, Y4=Y3-150, not canMerge(N3,N4).
+
+% unione di celle adiacenti verso SOPRA che si trovano al centro
+merge(X,150,X,300,1) :- movement(1), cell(X,150,N1), cell(X,300,N2), canMerge(N1,N2),
+                    cell(X,0,N3), N3!=0, not canMerge(N2,N3).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% unione di celle adiacenti verso SOTTO che si trovano sul bordo
+merge(X,300,X,450,2) :- movement(2), cell(X,300,N1), cell(X,450,N2), canMerge(N1,N2).
+
+% unione di celle adiacenti verso SOTTO che si trovano sul bordo opposto
+merge(X,Y1,X,Y2,2) :- movement(2), cell(X,Y1,N1), cell(X,Y2,N2), Y2=Y1+150, canMerge(N1,N2),
+                      cell(X,Y3,N3), Y3=Y2+150, N3!=0, not canMerge(N2,N3),
+                      cell(X,Y4,N4), N4!=0, Y4=Y3+150, not canMerge(N3,N4).
+
+% unione di celle adiacenti verso SOTTO che si trovano al centro
+merge(X,150,X,300,2) :- movement(2), cell(X,150,N1), cell(X,300,N2), canMerge(N1,N2),
+                    cell(X,450,N3), N3!=0, not canMerge(N2,N3).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% unione di celle adiacenti verso DESTRA che si trovano sul bordo
+merge(200,Y,300,Y,3) :- movement(3), cell(200,Y,N1), cell(300,Y,N2), canMerge(N1,N2).
+
+% unione di celle adiacenti verso DESTRA che si trovano sul bordo opposto
+merge(X1,Y,X2,Y,3) :- movement(3), cell(X1,Y,N1), cell(X2,Y,N2), X2=X1+100, canMerge(N1,N2),
+                      cell(X3,Y,N3), X3=X2+100, N3!=0, not canMerge(N2,N3),
+                      cell(X4,Y,N4), N4!=0, X4=X3+100, not canMerge(N3,N4).
+
+% unione di celle adiacenti verso DESTRA che si trovano al centro
+merge(100,Y,200,Y,3) :- movement(3), cell(100,Y,N1), cell(200,Y,N2), canMerge(N1,N2),
+                    cell(300,Y,N3), N3!=0, not canMerge(N2,N3).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% unione di celle adiacenti verso SINSTRA che si trovano sul bordo
+merge(0,Y,100,Y,4) :- movement(4), cell(0,Y,N1), cell(100,Y,N2), canMerge(N1,N2).
+
+% unione di celle adiacenti verso SINISTRA che si trovano sul bordo opposto
+merge(X1,Y,X2,Y,4) :- movement(4), cell(X1,Y,N1), cell(X2,Y,N2), X2=X1-100, canMerge(N1,N2),
+                      cell(X3,Y,N3), X3=X2-100, N3!=0, not canMerge(N2,N3),
+                      cell(X4,Y,N4), N4!=0, X4=X3-100, not canMerge(N3,N4).
+
+% unione di celle adiacenti verso SINISTRA che si trovano al centro
+merge(100,Y,200,Y,4) :- movement(4), cell(100,Y,N1), cell(200,Y,N2), canMerge(N1,N2),
+                    cell(0,Y,N3), N3!=0, not canMerge(N2,N3).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% numero totale di merge relativo alla direzione
+mergeNumber(Z) :- Z=#count{X1,Y1,X2,Y2 : merge(X1,Y1,X2,Y2,N)}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% tra tutte le direzioni, scegliere quella col numero di merge maggiore
+:~ mergeNumber(Z). [4-Z@3]
+
+% a parità di numero di merge, minimizza la somma dei risultati dei merge
+:~ merge(X1,Y1,X2,Y2,M), cell(X1,Y1,N1), cell(X2,Y2,N2). [N1+N2@2, X1,Y1,X2,Y2]
+
+% a parità di numero di merge, massimizzare la somma dei risultati dei merge
+%maxNumber(6144).
+%:~ merge(X1,Y1,X2,Y2,M), cell(X1,Y1,N1), cell(X2,Y2,N2), maxNumber(A). [A-N1-N2@1, X1,Y1,X2,Y2]
